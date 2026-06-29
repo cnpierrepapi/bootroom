@@ -88,7 +88,26 @@ body {
     0 12px 26px rgba(0, 0, 0, 0.5),
     inset 0 -22px 30px rgba(0, 0, 0, 0.06);
   font-family: var(--font-hand), "Comic Sans MS", cursive;
+  font-size: 1.12rem; /* Caveat is thin — nudge everything up for legibility */
   transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease;
+}
+
+/* High-contrast chip for semantic-coloured values (P&L, status) — stays readable
+   on ANY post-it colour because it carries its own dark background. */
+.val-chip {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 7px;
+  padding: 2px 10px;
+  font-weight: 800;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  letter-spacing: 0.2px;
+}
+/* Dark inner panel so coloured text/icons read on coloured paper. */
+.ink-panel {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  color: var(--color-foreground);
 }
 /* one folded/curled corner */
 .postit::after {

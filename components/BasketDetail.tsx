@@ -72,9 +72,9 @@ export default function BasketDetail({ basket, matches, onClose, onRename }: Pro
             <div className="text-xs opacity-60">value</div>
             <div className="text-xl font-bold font-mono">${basket.value.toFixed(2)}</div>
           </div>
-          <div className="bg-black/10 rounded-lg py-2">
-            <div className="text-xs opacity-60">P&amp;L</div>
-            <div className="text-xl font-bold" style={{ color: up ? "var(--color-success)" : "var(--color-destructive)" }}>
+          <div className="ink-panel py-2">
+            <div className="text-xs opacity-70" style={{ color: "var(--color-foreground)" }}>P&amp;L</div>
+            <div className="text-2xl font-bold" style={{ color: up ? "var(--color-success)" : "var(--color-destructive)" }}>
               {settled ? `${up ? "+" : ""}${pct.toFixed(1)}%` : "—"}
             </div>
           </div>

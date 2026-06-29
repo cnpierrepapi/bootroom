@@ -30,31 +30,33 @@ function ClusterCard({ name, c, paper }: { name: string; c: Cluster; paper: stri
     ["validate_stat proof round-trip", c.proof],
   ];
   return (
-    <article className={`postit ${paper} rot-3 w-full sm:w-80 p-5 pt-6`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">{name}</h2>
-        <span className="text-sm font-bold" style={{ color: ready ? "var(--color-success)" : "#1a1407" }}>
-          {ready ? "READY ✅" : c.configured ? "waiting" : "not configured"}
+    <article className={`postit ${paper} rot-3 w-full sm:w-96 p-6 pt-7`}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-3xl font-bold">{name}</h2>
+        <span className="val-chip text-base" style={{ color: ready ? "var(--color-success)" : "var(--color-foreground)" }}>
+          {ready ? "READY ✓" : c.configured ? "waiting" : "not configured"}
         </span>
       </div>
-      <div className="mt-4 flex flex-col gap-2.5">
+      <div className="ink-panel mt-4 p-4 flex flex-col gap-3.5">
         {rows.map(([label, s]) => {
           const d = dot(s);
           return (
-            <div key={label} className="flex items-start gap-2">
-              <span style={{ color: d.c }} className="text-lg leading-none mt-0.5">{d.t}</span>
+            <div key={label} className="flex items-start gap-2.5">
+              <span style={{ color: d.c }} className="text-xl leading-none mt-0.5 font-bold">{d.t}</span>
               <div className="min-w-0">
-                <div className="font-bold text-sm">{label}</div>
-                <div className="text-xs opacity-70 break-words">{s.detail}</div>
+                <div className="font-bold text-base leading-snug" style={{ fontFamily: "var(--font-geist-sans)" }}>{label}</div>
+                <div className="text-sm opacity-80 break-words" style={{ fontFamily: "var(--font-geist-sans)" }}>{s.detail}</div>
               </div>
             </div>
           );
         })}
       </div>
       {c.nextKickoffMin != null && (
-        <div className="mt-3 text-xs font-semibold opacity-70">next kickoff in ~{c.nextKickoffMin} min</div>
+        <div className="mt-3 text-base font-semibold opacity-80">next kickoff in ~{c.nextKickoffMin} min</div>
       )}
-      {c.provenStat && <div className="mt-2 text-xs font-mono bg-black/10 rounded px-2 py-1 break-words">{c.provenStat}</div>}
+      {c.provenStat && (
+        <div className="ink-panel mt-2 text-sm font-mono px-3 py-2 break-words" style={{ color: "var(--color-success)" }}>{c.provenStat}</div>
+      )}
     </article>
   );
 }

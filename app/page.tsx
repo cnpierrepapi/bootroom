@@ -111,8 +111,8 @@ export default function Home() {
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-3">
                     {b.teams.map((t) => (
                       <span key={t.code} className="flex items-center gap-1">
-                        <span className="text-xl leading-none">{t.flag}</span>
-                        <span className="text-xs font-semibold opacity-70">{t.code}</span>
+                        <span className="text-2xl leading-none">{t.flag}</span>
+                        <span className="text-sm font-semibold opacity-80">{t.code}</span>
                       </span>
                     ))}
                   </div>
@@ -123,7 +123,7 @@ export default function Home() {
                       <div className="text-sm opacity-60">from ${b.deposit.toFixed(2)}</div>
                     </div>
                     {settled && (
-                      <div className="text-lg font-bold" style={{ color: p.color }}>
+                      <div className="val-chip text-base" style={{ color: p.color }}>
                         {p.label}
                       </div>
                     )}
@@ -137,7 +137,7 @@ export default function Home() {
                           cashOut(b.id);
                           refresh();
                         }}
-                        className="flex-1 py-2 rounded-lg bg-black text-[var(--postit-yellow)] font-black text-sm"
+                        className="flex-1 py-2.5 rounded-lg bg-black text-[var(--postit-yellow)] font-black text-base"
                       >
                         Cash out ${b.value.toFixed(0)}
                       </button>
@@ -146,13 +146,13 @@ export default function Home() {
                           e.stopPropagation();
                           setRollId(b.id);
                         }}
-                        className="flex-1 py-2 rounded-lg bg-black/10 font-bold text-sm hover:bg-black/20"
+                        className="flex-1 py-2.5 rounded-lg bg-black/15 font-bold text-base hover:bg-black/25"
                       >
                         Roll over 🔁
                       </button>
                     </div>
                   ) : (
-                    <div className="mt-4 text-sm font-semibold opacity-70">🔒 locked · ends at full-time</div>
+                    <div className="mt-4 text-base font-semibold opacity-80">🔒 locked · ends at full-time</div>
                   )}
                 </article>
               );
