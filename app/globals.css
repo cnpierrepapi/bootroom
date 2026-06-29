@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────
+   Ballbasket — yellow + blue on navy, re-skinned as POST-IT NOTES
+   on a BLACKBOARD: every basket is a sticky note pinned to a board.
+   ────────────────────────────────────────────────────────────── */
+@theme {
+  --color-background: #050e1a; /* navy (outer frame) */
+  --color-board: #08140f; /* chalkboard slate-green (the board itself) */
+  --color-foreground: #eef3ec; /* chalk white */
+  --color-primary: #f5c800; /* signature yellow */
+  --color-success: #25d16b; /* up / gain */
+  --color-destructive: #ff5a67; /* down / loss */
+  --color-accent: #2f5f99;
+  --color-trust: #3b82f6;
+  --color-muted: #8b93a3;
+
+  /* Post-it paper colours (softened so dark text reads) */
+  --postit-yellow: #f5c800;
+  --postit-blue: #6aa8e0;
+  --postit-green: #5fd79a;
+  --postit-pink: #ff8a94;
+  --postit-cream: #f3ead2;
+
+  --font-display: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-hand: var(--font-hand);
+}
+
+/* The blackboard surface: dark slate + faint chalk dust + framed vignette */
+body {
+  background:
+    radial-gradient(1200px 620px at 50% -8%, rgba(120, 150, 130, 0.07), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.01) 0 3px, transparent 3px 6px),
+    var(--color-board);
+  color: var(--color-foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+@media (min-width: 768px) {
+  .app-container {
+    padding: 0 2rem;
+  }
+}
+
+/* Wooden chalk-tray / framed board edge */
+.board-frame {
+  border: 10px solid #2a1c0f;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 120px rgba(0, 0, 0, 0.55),
+    0 24px 60px rgba(0, 0, 0, 0.5);
+  background:
+    radial-gradient(900px 500px at 50% 0%, rgba(120, 150, 130, 0.06), transparent 60%),
+    var(--color-board);
+}
+
+/* Chalk handwriting */
+.chalk {
+  font-family: var(--font-hand), "Comic Sans MS", cursive;
+  color: #eef3ec;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 0 rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.4px;
+}
+.chalk-faint {
+  color: rgba(238, 243, 236, 0.55);
+}
+.chalk-yellow {
+  color: var(--color-primary);
+  text-shadow: 0 0 6px rgba(245, 200, 0, 0.35);
+}
+
+/* ── Post-it note ── */
+.postit {
+  position: relative;
+  background: var(--paper, var(--postit-yellow));
+  color: #1a1407;
+  border-radius: 2px 2px 3px 3px;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.5),
+    inset 0 -22px 30px rgba(0, 0, 0, 0.06);
+  font-family: var(--font-hand), "Comic Sans MS", cursive;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease;
+}
+/* one folded/curled corner */
+.postit::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.12) 50%);
+  border-bottom-right-radius: 3px;
+}
+/* washi tape strip */
+.postit-tape::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2.5deg);
+  width: 78px;
+  height: 24px;
+  background: rgba(238, 243, 236, 0.32);
+  border-left: 1px dashed rgba(0, 0, 0, 0.08);
+  border-right: 1px dashed rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+/* push-pin variant */
+.postit-pin::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff8a94, #d6394a 70%);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.45);
+}
+
+.paper-yellow { --paper: var(--postit-yellow); }
+.paper-blue { --paper: var(--postit-blue); }
+.paper-green { --paper: var(--postit-green); }
+.paper-pink { --paper: var(--postit-pink); }
+.paper-cream { --paper: var(--postit-cream); }
+
+/* slight pinned-at-an-angle rotations; straighten + lift on hover */
+.rot-1 { transform: rotate(-3deg); }
+.rot-2 { transform: rotate(2.2deg); }
+.rot-3 { transform: rotate(-1.4deg); }
+.rot-4 { transform: rotate(3.1deg); }
+.rot-5 { transform: rotate(-2.3deg); }
+.postit:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.02);
+  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.55), inset 0 -22px 30px rgba(0, 0, 0, 0.06);
+  z-index: 5;
+}
+
+/* "pin a new basket" empty note */
+.postit-empty {
+  background: transparent;
+  border: 2px dashed rgba(238, 243, 236, 0.32);
+  color: rgba(238, 243, 236, 0.7);
+  box-shadow: none;
+}
+.postit-empty::after { display: none; }
+.postit-empty:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-4px);
+  box-shadow: none;
+}
+
+@keyframes popUp {
+  from { opacity: 0; transform: translateY(40px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-pop { animation: popUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+.gold-glow { box-shadow: 0 0 36px rgba(245, 200, 0, 0.3); }
