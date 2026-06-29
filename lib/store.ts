@@ -112,6 +112,13 @@ export function createBasket(name: string, teams: Team[], deposit: number): { ok
   return { ok: true };
 }
 
+/** Rename a basket. */
+export function renameBasket(id: string, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  setBaskets(getBaskets().map((b) => (b.id === id ? { ...b, name: trimmed } : b)));
+}
+
 /** Simulate the matchday ending: realize NAV for every locked basket. */
 export function settleMatchday() {
   const baskets = getBaskets().map((b) =>

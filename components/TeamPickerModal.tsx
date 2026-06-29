@@ -11,11 +11,22 @@ type Props = {
   usdc: number;
   /** roll-over carries this realized value forward as the stake (read-only) */
   carryValue?: number;
+  /** normalised names of teams still in the World Cup (empty = no filter) */
+  activeNames?: string[];
   onClose: () => void;
   onConfirm: (args: { name: string; teams: Team[]; deposit: number }) => string | void;
 };
 
-export default function TeamPickerModal({ mode, usdc, carryValue = 0, onClose, onConfirm }: Props) {
+const norm = (s: string) => s.toLowerCase().trim();
+
+export default function TeamPickerModal({ mode, usdc, carryValue = 0, activeNames = [], onClose, onConfirm }: Props) {
+  // Only teams still in the World Cup; fall back to all if the feed is unavailable.
+  const pool = (() => {
+    if (!activeNames.length) return TEAMS;
+    const set = new Set(activeNames);
+    const f = TEAMS.filter((t) => set.has(norm(t.name)));
+    return f.length >= 2 ? f : TEAMS;
+  })();
   const [name, setName] = useState("");
   const [picked, setPicked] = useState<Team[]>([]);
   const [deposit, setDeposit] = useState<number>(Math.min(50, usdc));
@@ -71,11 +82,11 @@ export default function TeamPickerModal({ mode, usdc, carryValue = 0, onClose, o
 
         <div className="mt-4">
           <div className="flex items-center justify-between text-sm font-semibold opacity-70 mb-2">
-            <span>Pick teams ({picked.length}/{MAX_TEAMS})</span>
+            <span>Pick teams ({picked.length}/{MAX_TEAMS}) · still in the WC</span>
             <span>scored by ⌀ mean</span>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
-            {TEAMS.map((t) => {
+            {pool.map((t) => {
               const on = !!picked.find((x) => x.code === t.code);
               return (
                 <button

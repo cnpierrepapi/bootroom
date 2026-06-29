@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import TeamPickerModal from "@/components/TeamPickerModal";
+import BasketDetail, { type Match } from "@/components/BasketDetail";
 import {
   getUsdc,
   getBaskets,
@@ -10,6 +11,7 @@ import {
   settleMatchday,
   cashOut,
   rollOver,
+  renameBasket,
   type Basket,
 } from "@/lib/store";
 import type { Team } from "@/lib/teams";
@@ -28,6 +30,9 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [creating, setCreating] = useState(false);
   const [rollId, setRollId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [activeTeams, setActiveTeams] = useState<string[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
 
   const refresh = useCallback(() => {
     setUsdcState(getUsdc());
@@ -38,10 +43,18 @@ export default function Home() {
   useEffect(() => {
     refresh();
     setMounted(true);
+    fetch("/api/fixtures")
+      .then((r) => r.json())
+      .then((d) => {
+        setActiveTeams(d.activeTeams ?? []);
+        setMatches(d.matches ?? []);
+      })
+      .catch(() => {});
   }, [refresh]);
 
   const lockedCount = baskets.filter((b) => b.status === "locked").length;
   const rollTarget = baskets.find((b) => b.id === rollId) ?? null;
+  const openTarget = baskets.find((b) => b.id === openId) ?? null;
 
   return (
     <main className="app-container py-6 sm:py-10">
@@ -89,7 +102,9 @@ export default function Home() {
               return (
                 <article
                   key={b.id}
-                  className={`postit ${b.paper} ${b.rot} ${b.pin === "tape" ? "postit-tape" : "postit-pin"} w-60 p-5 pt-6`}
+                  onClick={() => setOpenId(b.id)}
+                  className={`postit ${b.paper} ${b.rot} ${b.pin === "tape" ? "postit-tape" : "postit-pin"} w-60 p-5 pt-6 cursor-pointer`}
+                  title="Click to expand"
                 >
                   <h2 className="text-2xl font-bold leading-tight">{b.name}</h2>
 
@@ -117,7 +132,8 @@ export default function Home() {
                   {settled ? (
                     <div className="mt-4 flex gap-2">
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           cashOut(b.id);
                           refresh();
                         }}
@@ -126,7 +142,10 @@ export default function Home() {
                         Cash out ${b.value.toFixed(0)}
                       </button>
                       <button
-                        onClick={() => setRollId(b.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRollId(b.id);
+                        }}
                         className="flex-1 py-2 rounded-lg bg-black/10 font-bold text-sm hover:bg-black/20"
                       >
                         Roll over 🔁
@@ -153,8 +172,8 @@ export default function Home() {
 
       {/* chalk legend */}
       <footer className="chalk chalk-faint text-xl mt-7 flex flex-wrap gap-x-8 gap-y-2 justify-center">
-        <span>🔒 locked till full-time</span>
-        <span>cash out your share, or roll the value into new teams</span>
+        <span>tap a note to expand</span>
+        <span>🔒 locked till full-time · cash out or roll into new teams</span>
         <span className="chalk-yellow">▲ value moves with real on-chain goals · corners · cards</span>
       </footer>
 
@@ -162,6 +181,7 @@ export default function Home() {
         <TeamPickerModal
           mode="create"
           usdc={usdc}
+          activeNames={activeTeams}
           onClose={() => setCreating(false)}
           onConfirm={({ name, teams, deposit }) => {
             const r = createBasket(name, teams, deposit);
@@ -177,11 +197,24 @@ export default function Home() {
           mode="rollover"
           usdc={usdc}
           carryValue={rollTarget.value}
+          activeNames={activeTeams}
           onClose={() => setRollId(null)}
           onConfirm={({ teams }: { teams: Team[] }) => {
             const r = rollOver(rollTarget.id, teams);
             if (!r.ok) return r.error;
             setRollId(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {openTarget && (
+        <BasketDetail
+          basket={openTarget}
+          matches={matches}
+          onClose={() => setOpenId(null)}
+          onRename={(name) => {
+            renameBasket(openTarget.id, name);
             refresh();
           }}
         />
