@@ -97,12 +97,14 @@ async function checkCluster(base?: string, jwt?: string, token?: string): Promis
     detail: `${live.Participant1} ${g1}–${g2} ${live.Participant2} · ${statRecs.length} stat updates`,
   };
 
-  // 3) stat-validation proof round-trip — use the most recent stat-bearing seqs.
+  // 3) stat-validation proof round-trip. The freshest seqs stream live but aren't
+  //    Merkle-anchored yet (404 "not a processed record"), so walk recent
+  //    stat-bearing seqs newest→oldest and take the first that's been processed.
   const seqs = statRecs
     .map((r) => r.Seq)
     .filter((x) => x != null)
     .sort((a, b) => b - a)
-    .slice(0, 3);
+    .slice(0, 10);
   for (const seq of seqs) {
     const r = await jget(base, `/api/scores/stat-validation?fixtureId=${live.FixtureId}&seq=${seq}&statKey=1&statKey2=2`, jwt, token);
     if (r.j && r.j.statToProve) {
@@ -110,7 +112,7 @@ async function checkCluster(base?: string, jwt?: string, token?: string): Promis
       rep.provenStat = JSON.stringify(r.j.statToProve);
       return rep;
     }
-    rep.proof = { ok: false, detail: `http ${r.status}: ${r.t.slice(0, 90)}` };
+    rep.proof = { ok: false, detail: `seq ${seq}: ${(r.j?.error || r.t).slice(0, 70)}` };
   }
   return rep;
 }
