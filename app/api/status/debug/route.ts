@@ -107,17 +107,31 @@ async function diagnose(base?: string, jwt?: string, token?: string) {
     }
   }
 
-  const sse = await sseTap(base, jwt, token, 7000);
+  const sse = await sseTap(base, jwt, token, 10000);
+
+  // Every fixture (BOTH competitions), by name + time — so we can see if a
+  // specific match (e.g. Brazil v Japan) is even in this feed and under which comp.
+  const allFixtures = all
+    .map((f) => ({
+      fid: f.FixtureId,
+      comp: f.CompetitionId,
+      teams: `${f.Participant1} v ${f.Participant2}`,
+      startISO: new Date(f.StartTime).toISOString(),
+      startsInMin: Math.round((f.StartTime - now) / 60000),
+      started: f.StartTime <= now,
+      gameState: f.GameState ?? null,
+    }))
+    .sort((a, b) => a.startsInMin - b.startsInMin);
+
+  const hunt = (s: string) => allFixtures.filter((f) => f.teams.toLowerCase().includes(s));
+  const matched = [...new Set([...hunt("brazil"), ...hunt("japan"), ...hunt("bra"), ...hunt("jap")])];
 
   return {
     configured: true,
+    nowISO: new Date(now).toISOString(),
     fixtures: { status: fx.status, total: all.length, comps, wc: wc.length },
-    wcSample: wc.slice(0, 3).map((f) => ({
-      fid: f.FixtureId,
-      teams: `${f.Participant1} v ${f.Participant2}`,
-      startsInMin: Math.round((f.StartTime - now) / 60000),
-      gameState: f.GameState ?? null,
-    })),
+    brazilJapan: matched.length ? matched : "NOT in this feed",
+    allFixtures,
     restScoreHits: restHits,
     sse,
   };
