@@ -23,8 +23,8 @@ type Props = {
 
 export default function BasketDetail({ basket, matches, onClose, onRename }: Props) {
   const [name, setName] = useState(basket.name);
-  const teamNames = new Set(basket.teams.map((t) => norm(t.name)));
-  const related = matches.filter((m) => teamNames.has(norm(m.p1)) || teamNames.has(norm(m.p2)));
+  const teamKeys = new Set(basket.teams.flatMap((t) => [norm(t.name), norm(t.code)]));
+  const related = matches.filter((m) => teamKeys.has(norm(m.p1)) || teamKeys.has(norm(m.p2)));
 
   const diff = basket.value - basket.deposit;
   const pct = basket.deposit ? (diff / basket.deposit) * 100 : 0;

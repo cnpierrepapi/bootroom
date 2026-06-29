@@ -24,7 +24,7 @@ export default function TeamPickerModal({ mode, usdc, carryValue = 0, activeName
   const pool = (() => {
     if (!activeNames.length) return TEAMS;
     const set = new Set(activeNames);
-    const f = TEAMS.filter((t) => set.has(norm(t.name)));
+    const f = TEAMS.filter((t) => set.has(norm(t.name)) || set.has(norm(t.code)));
     return f.length >= 2 ? f : TEAMS;
   })();
   const [name, setName] = useState("");
