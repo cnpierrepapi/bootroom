@@ -53,24 +53,49 @@ async function sseRaw(base: string, jwt: string, token: string, path: string, ms
   return { path, status, ok, bytes, chunks, first: first.slice(0, 500) };
 }
 
+async function rawget(base: string, path: string, jwt: string, token: string) {
+  const r = await fetch(`${base}${path}`, {
+    headers: { Authorization: `Bearer ${jwt}`, "X-Api-Token": token },
+    cache: "no-store",
+  });
+  return { status: r.status, text: await r.text() };
+}
+
 async function probe(base?: string, jwt?: string, token?: string, fid?: string) {
   if (!base || !jwt || !token) return { configured: false };
   const f = fid || "18172469";
-  // epoch-day + hour for the day-based endpoints (UTC).
-  const now = new Date();
-  const epochDay = Math.floor(now.getTime() / 86400000);
-  const rest = await Promise.all([
-    jget(base, `/api/scores/snapshot/${f}`, jwt, token),
-    jget(base, `/api/scores/updates/${f}`, jwt, token),
-    jget(base, `/api/scores/historical/${f}`, jwt, token),
-    jget(base, `/api/odds/snapshot/${f}`, jwt, token),
-    jget(base, `/api/scores/stat-validation?fixtureId=${f}&seq=0&statKey=1&statKey2=2`, jwt, token),
-  ]);
-  // Streams: bare, then fixture-filtered variants, in case the stream needs scoping.
-  const streams = [];
-  streams.push(await sseRaw(base, jwt, token, `/api/scores/stream`, 12000));
-  streams.push(await sseRaw(base, jwt, token, `/api/scores/stream?fixtureId=${f}`, 8000));
-  return { configured: true, fixture: f, epochDay, rest, streams };
+
+  // The snapshot endpoint returns a clean JSON array (unlike /updates which is SSE text).
+  const snap = await rawget(base, `/api/scores/snapshot/${f}`, jwt, token);
+  let recs: any[] = [];
+  try { recs = JSON.parse(snap.text); } catch {}
+
+  // Records that actually carry encoded stats (the validate_stat inputs).
+  const withStats = recs
+    .filter((r) => r.Stats && Object.keys(r.Stats).length > 0)
+    .map((r) => ({ seq: r.Seq, action: r.Action, statKeys: Object.keys(r.Stats), stats: r.Stats }));
+
+  const allSeqs = [...new Set(recs.map((r) => r.Seq).filter((x) => x != null))] as number[];
+  const maxSeq = allSeqs.length ? Math.max(...allSeqs) : null;
+
+  // Try stat-validation against real seqs that carry stats, sweeping a couple of
+  // stat-key pairs (base 1 = goals p1, base 2 = goals p2 per the encoding).
+  const seqsToTry = withStats.slice(-3).map((r) => r.seq);
+  const validations: any[] = [];
+  for (const seq of seqsToTry) {
+    for (const [k1, k2] of [["1", "2"], ["7", "8"]]) {
+      const v = await jget(base, `/api/scores/stat-validation?fixtureId=${f}&seq=${seq}&statKey=${k1}&statKey2=${k2}`, jwt, token);
+      validations.push({ seq, k1, k2, status: v.status, body: v.body.slice(0, 200) });
+    }
+  }
+
+  return {
+    configured: true,
+    fixture: f,
+    snapshot: { status: snap.status, totalRecords: recs.length, maxSeq, withStatsCount: withStats.length },
+    sampleStatRecords: withStats.slice(-4),
+    validations,
+  };
 }
 
 export async function GET(req: Request) {
