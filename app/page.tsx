@@ -108,7 +108,7 @@ export default function Home() {
     <main className="app-container py-8 sm:py-12">
       {/* Chalk header */}
       <header className="text-center mb-8">
-        <div className="chalk-faint chalk text-lg">Ballbasket · TxLINE World Cup</div>
+        <div className="chalk-faint chalk text-lg">Pitchfolio · TxLINE World Cup</div>
         <h1 className="chalk text-5xl sm:text-7xl font-bold mt-1">
           Pin your teams. <span className="chalk-yellow">Score the matchday.</span>
         </h1>

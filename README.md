@@ -1,8 +1,8 @@
-# Ballbasket 🧺⚽
+# Pitchfolio ⚽📈
 
 **Pin your teams. Score the matchday.**
 
-Ballbasket is a trustless **sports-index** game for the World Cup, built on the
+Pitchfolio is a trustless **sports-index** game for the World Cup, built on the
 [TxLINE](https://txline.txodds.com) on-chain data layer. You build a *basket* of
 national teams — like a tiny ETF — deposit USDC, and your basket's value rises or
 falls with the **real, on-chain-verified match output** of the teams you picked.
