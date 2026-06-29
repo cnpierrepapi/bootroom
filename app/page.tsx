@@ -1,189 +1,191 @@
-// Static visual of the board — aesthetic checkpoint only (no interactivity yet).
-// Demonstrates the post-it-on-blackboard language: each basket is a sticky note
-// pinned at an angle, showing its teams, current value, P&L, and lock state.
+"use client";
 
-type Sample = {
-  name: string;
-  teams: { flag: string; abbr: string }[];
-  value: number;
-  deposit: number;
-  locked: boolean;
-  note: string;
-  paper: string;
-  rot: string;
-  pin: "tape" | "pin";
-};
-
-const SAMPLES: Sample[] = [
-  {
-    name: "Group of Goals",
-    teams: [
-      { flag: "🇧🇷", abbr: "BRA" },
-      { flag: "🇳🇱", abbr: "NED" },
-      { flag: "🇪🇸", abbr: "ESP" },
-    ],
-    value: 142.5,
-    deposit: 100,
-    locked: true,
-    note: "matchday 2",
-    paper: "paper-yellow",
-    rot: "rot-1",
-    pin: "tape",
-  },
-  {
-    name: "Dark Horses",
-    teams: [
-      { flag: "🇲🇦", abbr: "MAR" },
-      { flag: "🇯🇵", abbr: "JPN" },
-      { flag: "🇸🇳", abbr: "SEN" },
-    ],
-    value: 88.2,
-    deposit: 100,
-    locked: true,
-    note: "matchday 2",
-    paper: "paper-blue",
-    rot: "rot-2",
-    pin: "pin",
-  },
-  {
-    name: "Set-Piece Kings",
-    teams: [
-      { flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", abbr: "ENG" },
-      { flag: "🇭🇷", abbr: "CRO" },
-      { flag: "🇩🇰", abbr: "DEN" },
-    ],
-    value: 117.9,
-    deposit: 100,
-    locked: false,
-    note: "open · pick & lock",
-    paper: "paper-green",
-    rot: "rot-3",
-    pin: "tape",
-  },
-  {
-    name: "Chaos Merchants",
-    teams: [
-      { flag: "🇦🇷", abbr: "ARG" },
-      { flag: "🇺🇾", abbr: "URU" },
-      { flag: "🇲🇽", abbr: "MEX" },
-    ],
-    value: 73.4,
-    deposit: 100,
-    locked: true,
-    note: "matchday 2",
-    paper: "paper-pink",
-    rot: "rot-4",
-    pin: "pin",
-  },
-  {
-    name: "Old Guard",
-    teams: [
-      { flag: "🇩🇪", abbr: "GER" },
-      { flag: "🇫🇷", abbr: "FRA" },
-      { flag: "🇵🇹", abbr: "POR" },
-    ],
-    value: 101.1,
-    deposit: 100,
-    locked: false,
-    note: "open · pick & lock",
-    paper: "paper-cream",
-    rot: "rot-5",
-    pin: "tape",
-  },
-];
+import { useCallback, useEffect, useState } from "react";
+import TeamPickerModal from "@/components/TeamPickerModal";
+import {
+  getUsdc,
+  getBaskets,
+  getMatchday,
+  createBasket,
+  settleMatchday,
+  cashOut,
+  rollOver,
+  type Basket,
+} from "@/lib/store";
+import type { Team } from "@/lib/teams";
 
 function pnl(value: number, deposit: number) {
   const diff = value - deposit;
-  const pct = (diff / deposit) * 100;
+  const pct = deposit ? (diff / deposit) * 100 : 0;
   const up = diff >= 0;
-  return {
-    up,
-    label: `${up ? "▲" : "▼"} ${up ? "+" : ""}${pct.toFixed(1)}%`,
-    color: up ? "var(--color-success)" : "var(--color-destructive)",
-  };
+  return { up, label: `${up ? "▲ +" : "▼ "}${pct.toFixed(1)}%`, color: up ? "var(--color-success)" : "var(--color-destructive)" };
 }
 
 export default function Home() {
-  return (
-    <main className="app-container py-8 sm:py-12">
-      {/* Chalk header */}
-      <header className="text-center mb-8">
-        <div className="chalk-faint chalk text-lg">Pitchfolio · TxLINE World Cup</div>
-        <h1 className="chalk text-5xl sm:text-7xl font-bold mt-1">
-          Pin your teams. <span className="chalk-yellow">Score the matchday.</span>
-        </h1>
-        <p className="chalk chalk-faint text-2xl mt-2">
-          a basket of teams · deposit USDC · real match stats move its value · cash out or roll over
-        </p>
-      </header>
+  const [usdc, setUsdcState] = useState(0);
+  const [baskets, setBaskets] = useState<Basket[]>([]);
+  const [matchday, setMatchday] = useState(1);
+  const [mounted, setMounted] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [rollId, setRollId] = useState<string | null>(null);
 
-      {/* The blackboard */}
-      <section className="board-frame p-6 sm:p-10">
+  const refresh = useCallback(() => {
+    setUsdcState(getUsdc());
+    setBaskets(getBaskets());
+    setMatchday(getMatchday());
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    setMounted(true);
+  }, [refresh]);
+
+  const lockedCount = baskets.filter((b) => b.status === "locked").length;
+  const rollTarget = baskets.find((b) => b.id === rollId) ?? null;
+
+  return (
+    <main className="app-container py-6 sm:py-10">
+      {/* nav */}
+      <nav className="flex items-center justify-between flex-wrap gap-3 mb-7">
+        <div>
+          <div className="chalk-faint chalk text-base">Bootroom · TxLINE World Cup</div>
+          <div className="chalk text-4xl sm:text-5xl font-bold leading-none">The Bootroom</div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="chalk chalk-yellow text-2xl font-bold">
+            💵 {mounted ? `$${usdc.toFixed(2)}` : "…"} <span className="chalk-faint text-base font-normal">USDC</span>
+          </div>
+          <button
+            onClick={() => {
+              settleMatchday();
+              refresh();
+            }}
+            disabled={lockedCount === 0}
+            className="chalk text-lg rounded-lg border-2 border-dashed border-[rgba(238,243,236,0.35)] px-3 py-1.5 disabled:opacity-30 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition"
+            title="Simulated until live TxLINE scoring is wired"
+          >
+            ⏱ End matchday {matchday} (sim)
+          </button>
+        </div>
+      </nav>
+
+      {/* the blackboard */}
+      <section className="board-frame p-5 sm:p-9">
         <div className="flex items-end justify-between mb-7 px-1">
           <div>
             <div className="chalk text-3xl">The Board</div>
-            <div className="chalk chalk-faint text-xl">5 baskets · 3 locked · pool $1,240 USDC</div>
+            <div className="chalk chalk-faint text-xl">
+              {mounted ? `${baskets.length} baskets · ${lockedCount} locked` : "loading…"}
+            </div>
           </div>
           <div className="chalk chalk-faint text-xl hidden sm:block">scored by ⌀ mean points</div>
         </div>
 
         <div className="flex flex-wrap gap-8 sm:gap-10 justify-center sm:justify-start">
-          {SAMPLES.map((b) => {
-            const p = pnl(b.value, b.deposit);
-            return (
-              <article
-                key={b.name}
-                className={`postit ${b.paper} ${b.rot} ${
-                  b.pin === "tape" ? "postit-tape" : "postit-pin"
-                } w-56 p-5 pt-6`}
-              >
-                <h2 className="text-2xl font-bold leading-tight">{b.name}</h2>
+          {mounted &&
+            baskets.map((b) => {
+              const p = pnl(b.value, b.deposit);
+              const settled = b.status === "settled";
+              return (
+                <article
+                  key={b.id}
+                  className={`postit ${b.paper} ${b.rot} ${b.pin === "tape" ? "postit-tape" : "postit-pin"} w-60 p-5 pt-6`}
+                >
+                  <h2 className="text-2xl font-bold leading-tight">{b.name}</h2>
 
-                <div className="flex items-center gap-2 mt-3">
-                  {b.teams.map((t) => (
-                    <span key={t.abbr} className="flex flex-col items-center">
-                      <span className="text-2xl leading-none">{t.flag}</span>
-                      <span className="text-xs font-semibold opacity-70">{t.abbr}</span>
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-4 flex items-end justify-between">
-                  <div>
-                    <div className="text-3xl font-bold font-mono">${b.value.toFixed(0)}</div>
-                    <div className="text-sm opacity-60">from ${b.deposit}</div>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-3">
+                    {b.teams.map((t) => (
+                      <span key={t.code} className="flex items-center gap-1">
+                        <span className="text-xl leading-none">{t.flag}</span>
+                        <span className="text-xs font-semibold opacity-70">{t.code}</span>
+                      </span>
+                    ))}
                   </div>
-                  <div className="text-lg font-bold" style={{ color: p.color }}>
-                    {p.label}
-                  </div>
-                </div>
 
-                <div className="mt-3 text-sm font-semibold">
-                  {b.locked ? (
-                    <span className="opacity-70">🔒 locked · {b.note}</span>
+                  <div className="mt-4 flex items-end justify-between">
+                    <div>
+                      <div className="text-3xl font-bold font-mono">${b.value.toFixed(2)}</div>
+                      <div className="text-sm opacity-60">from ${b.deposit.toFixed(2)}</div>
+                    </div>
+                    {settled && (
+                      <div className="text-lg font-bold" style={{ color: p.color }}>
+                        {p.label}
+                      </div>
+                    )}
+                  </div>
+
+                  {settled ? (
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => {
+                          cashOut(b.id);
+                          refresh();
+                        }}
+                        className="flex-1 py-2 rounded-lg bg-black text-[var(--postit-yellow)] font-black text-sm"
+                      >
+                        Cash out ${b.value.toFixed(0)}
+                      </button>
+                      <button
+                        onClick={() => setRollId(b.id)}
+                        className="flex-1 py-2 rounded-lg bg-black/10 font-bold text-sm hover:bg-black/20"
+                      >
+                        Roll over 🔁
+                      </button>
+                    </div>
                   ) : (
-                    <span style={{ color: "#1a1407" }}>✎ {b.note}</span>
+                    <div className="mt-4 text-sm font-semibold opacity-70">🔒 locked · ends at full-time</div>
                   )}
-                </div>
-              </article>
-            );
-          })}
+                </article>
+              );
+            })}
 
           {/* pin a new basket */}
-          <article className="postit postit-empty rot-2 w-56 p-5 flex flex-col items-center justify-center text-center min-h-[210px]">
+          <button
+            onClick={() => setCreating(true)}
+            className="postit postit-empty rot-2 w-60 p-5 flex flex-col items-center justify-center text-center min-h-[210px]"
+          >
             <div className="text-5xl leading-none">+</div>
             <div className="text-2xl font-bold mt-2">pin a new basket</div>
-            <div className="text-sm mt-1 opacity-70">pick 3 teams · deposit · lock</div>
-          </article>
+            <div className="text-sm mt-1 opacity-70">pick teams · deposit · lock</div>
+          </button>
         </div>
       </section>
 
       {/* chalk legend */}
       <footer className="chalk chalk-faint text-xl mt-7 flex flex-wrap gap-x-8 gap-y-2 justify-center">
         <span>🔒 locked till full-time</span>
-        <span>✎ open — re-pick &amp; roll over</span>
+        <span>cash out your share, or roll the value into new teams</span>
         <span className="chalk-yellow">▲ value moves with real on-chain goals · corners · cards</span>
       </footer>
+
+      {creating && (
+        <TeamPickerModal
+          mode="create"
+          usdc={usdc}
+          onClose={() => setCreating(false)}
+          onConfirm={({ name, teams, deposit }) => {
+            const r = createBasket(name, teams, deposit);
+            if (!r.ok) return r.error;
+            setCreating(false);
+            refresh();
+          }}
+        />
+      )}
+
+      {rollTarget && (
+        <TeamPickerModal
+          mode="rollover"
+          usdc={usdc}
+          carryValue={rollTarget.value}
+          onClose={() => setRollId(null)}
+          onConfirm={({ teams }: { teams: Team[] }) => {
+            const r = rollOver(rollTarget.id, teams);
+            if (!r.ok) return r.error;
+            setRollId(null);
+            refresh();
+          }}
+        />
+      )}
     </main>
   );
 }

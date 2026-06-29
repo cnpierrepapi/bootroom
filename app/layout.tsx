@@ -20,7 +20,7 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "Pitchfolio — pin your teams, score the matchday",
+  title: "Bootroom — pin your teams, score the matchday",
   description:
     "Build a basket of World Cup teams, deposit USDC, and let real on-chain match stats move your basket's value. Trustlessly settled on Solana via TxLINE.",
 };
