@@ -1,38 +1,22 @@
-// Settlement resolution: turn a punt into a hit/miss + observed count + a proof,
-// from the captured replay feed (Phase-1 ground truth). resolveLink already
-// produces the proof in the shape validate_stat will fill in Phase 2 (statKeys +
-// receipt), so this code does not change when we go live on the on-chain feed.
-import { resolveLink, type Prop } from "./props";
-import { fixtureById, type StatKind } from "./replay";
-import type { Scope, Side } from "./props";
+// Stage-1 settlement: resolve a goals-market punt to hit/miss/push from the
+// fixture's FINAL goals (the scores feed / br_fixtures). This scores the strat
+// immediately at full time; the on-chain validate_stat proof (Stage 2, the cron)
+// runs later when the daily Merkle root posts and only then unlocks withdrawal.
+import { settlePick, type MarketKind, type Pick } from "./markets";
 
-// The subset of a br_punts row settlement needs.
+// The subset of a br_punts row Stage-1 settlement needs.
 export type PuntRow = {
   id: number;
-  fixture_id: number;
-  side: Side;
-  team_code: string | null;
-  stat: StatKind;
-  threshold: number;
-  scope: Scope;
-  resolved: "hit" | "miss" | null;
+  market: MarketKind;
+  line: number | string | null;
+  pick: Pick;
+  resolved: "hit" | "miss" | "push" | null;
 };
 
-export type Resolution = {
-  puntId: number;
-  resolved: "hit" | "miss";
-  observed: number;
-  proof: ReturnType<typeof resolveLink>["proof"];
-};
+export type Resolution = { puntId: number; resolved: "hit" | "miss" | "push" };
 
-// Resolve one punt against the feed. Returns null if the fixture isn't in the
-// feed (can't settle it) — br_finalize_strat then treats it as a non-contributor.
-export function resolvePunt(p: PuntRow): Resolution | null {
-  if (!fixtureById(p.fixture_id)) return null;
-  const prop: Prop = {
-    fixtureId: p.fixture_id, side: p.side, teamCode: p.team_code ?? "",
-    stat: p.stat, n: p.threshold, scope: p.scope,
-  };
-  const { hit, observed, proof } = resolveLink(prop);
-  return { puntId: p.id, resolved: hit ? "hit" : "miss", observed, proof };
+// Resolve one punt against the fixture's final goals (p1g, p2g).
+export function resolvePunt(p: PuntRow, p1g: number, p2g: number): Resolution {
+  const line = p.line == null ? null : Number(p.line);
+  return { puntId: p.id, resolved: settlePick(p.market, line, p.pick, p1g, p2g) };
 }

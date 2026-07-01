@@ -13,7 +13,7 @@ type StratRow = { id: number; device_id: string; game_day: string; score: number
 
 async function loadPunts(stratId: number): Promise<Punt[]> {
   const rows = await supaGet<Parameters<typeof rowToPunt>[0][]>(
-    `br_punts?strat_id=eq.${stratId}&order=slot.asc&select=id,slot,fixture_id,side,team_code,stat,threshold,scope,odds,boots_paid,resolved,observed`
+    `br_punts?strat_id=eq.${stratId}&order=slot.asc&select=id,slot,fixture_id,market,line,pick,odds,boots_paid,resolved,proof_status,proof_tx`
   );
   return rows.map(rowToPunt);
 }
