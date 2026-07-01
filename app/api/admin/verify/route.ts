@@ -15,12 +15,20 @@ const CAP_LAMPORTS = Math.round(Number(process.env.PROOF_SPEND_CAP_SOL || "1.4")
 const PER_FIXTURE_LAMPORTS = 10_000;   // two validate_stat txs (~5000 each)
 const BATCH = 5;                        // fixtures per run, so we stay under 60s
 
+const CRON_SECRET = process.env.CRON_SECRET || "";
+
+// Authorized either by the admin password (manual) or the Vercel cron bearer.
 function authed(req: Request): boolean {
-  const h = req.headers.get("x-admin-password") || req.headers.get("authorization")?.replace(/^Bearer /, "");
-  return !!ADMIN && h === ADMIN;
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer /, "");
+  const pw = req.headers.get("x-admin-password");
+  return (!!ADMIN && (pw === ADMIN || bearer === ADMIN)) || (!!CRON_SECRET && bearer === CRON_SECRET);
 }
 
-export async function POST(req: Request) {
+// Vercel Cron fires a GET; manual triggers use POST. Same sweep either way.
+export async function GET(req: Request) { return sweep(req); }
+export async function POST(req: Request) { return sweep(req); }
+
+async function sweep(req: Request) {
   if (!authed(req)) return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
   if (!supaReady()) return Response.json({ ok: false, error: "backend not configured" }, { status: 503 });
   if (!proofConfigured()) return Response.json({ ok: false, error: "proof not configured (TXLINE_API_TOKEN / signer)" }, { status: 503 });
