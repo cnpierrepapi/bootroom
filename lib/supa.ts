@@ -20,6 +20,17 @@ export async function supaGet<T = unknown>(pathAndQuery: string): Promise<T> {
   return r.json();
 }
 
+// PATCH a br_* row via PostgREST. Service-role bypasses RLS, so this is used for
+// non-money writes (e.g. stamping a punt's resolution at settlement). Money/state
+// mutations still go through the locked-down RPCs, never a raw PATCH.
+export async function supaPatch<T = unknown>(pathAndQuery: string, patch: unknown): Promise<T> {
+  const r = await fetch(`${URL}/rest/v1/${pathAndQuery}`, {
+    method: "PATCH", headers: headers({ Prefer: "return=representation" }), body: JSON.stringify(patch),
+  });
+  if (!r.ok) throw new Error(`supabase PATCH ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
 // Call a Postgres function. Every money/state mutation goes through an RPC so the
 // logic (balance guards, idempotency, scoring) is atomic inside the database.
 export async function supaRpc<T = unknown>(fn: string, args: Record<string, unknown>): Promise<T> {
