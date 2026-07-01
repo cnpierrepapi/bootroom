@@ -37,7 +37,7 @@ export default function Landing() {
             <Link href="/play" className="postit paper-yellow rot-2 px-7 py-4 text-2xl font-bold gold-glow">Build your strat →</Link>
             <a href="#how" className="chalk text-xl rounded-lg border-2 border-dashed border-[rgba(238,243,236,0.35)] px-6 py-4 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition">How it works</a>
           </div>
-          <div className="mt-14 text-4xl select-none ball-roll" aria-hidden="true">⚽</div>
+          <div className="ball-track mt-14" aria-hidden="true"><span className="ball-roll text-4xl select-none">⚽</span></div>
         </section>
 
         {/* ── MARKET TICKER ── */}
@@ -68,22 +68,26 @@ export default function Landing() {
         {/* ── REAL ODDS / REAL PROOF ── */}
         <section className="app-container pb-6">
           <div className="grid sm:grid-cols-2 gap-8">
-            <Reveal className="float-a">
-              <div className="ink-panel p-8 rounded-2xl h-full">
-                <div className="chalk chalk-yellow text-3xl font-bold">Real odds. No made-up numbers.</div>
-                <p className="chalk chalk-faint text-lg mt-3 leading-snug">
-                  Every punt is priced from TxLINE&apos;s demargined &ldquo;stable price&rdquo; book — the fair,
-                  no-vig line the market sees. Your add-time odds are frozen onto the punt.
-                </p>
+            <Reveal className="h-full">
+              <div className="float-a h-full">
+                <div className="ink-panel p-8 rounded-2xl h-full">
+                  <div className="chalk chalk-yellow text-3xl font-bold">Real odds. No made-up numbers.</div>
+                  <p className="chalk chalk-faint text-lg mt-3 leading-snug">
+                    Every punt is priced from TxLINE&apos;s demargined &ldquo;stable price&rdquo; book — the fair,
+                    no-vig line the market sees. Your add-time odds are frozen onto the punt.
+                  </p>
+                </div>
               </div>
             </Reveal>
-            <Reveal delay={120} className="float-b">
-              <div className="ink-panel p-8 rounded-2xl h-full">
-                <div className="chalk chalk-yellow text-3xl font-bold">Proven on-chain, not on trust.</div>
-                <p className="chalk chalk-faint text-lg mt-3 leading-snug">
-                  TxLINE anchors every World Cup score as a Merkle root on Solana. Bootroom lands a real
-                  <span className="font-mono"> validate_stat</span> tx — an explorer-linkable receipt, win or lose.
-                </p>
+            <Reveal delay={120} className="h-full">
+              <div className="float-b h-full">
+                <div className="ink-panel p-8 rounded-2xl h-full">
+                  <div className="chalk chalk-yellow text-3xl font-bold">Proven on-chain, not on trust.</div>
+                  <p className="chalk chalk-faint text-lg mt-3 leading-snug">
+                    TxLINE anchors every World Cup score as a Merkle root on Solana. Bootroom lands a real
+                    <span className="font-mono"> validate_stat</span> tx — an explorer-linkable receipt, win or lose.
+                  </p>
+                </div>
               </div>
             </Reveal>
           </div>

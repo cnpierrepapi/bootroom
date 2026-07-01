@@ -13,9 +13,12 @@ export default function Reveal({ children, className = "", delay = 0 }: { childr
     const el = ref.current;
     if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setShown(true); return; }
+    // Already on screen at mount (above the fold)? Reveal right away.
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0) { setShown(true); return; }
     const io = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setShown(true); io.disconnect(); } },
-      { threshold: 0.15 },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
