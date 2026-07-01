@@ -33,6 +33,10 @@ export async function POST(req: Request) {
 
   const day = b.day || todayGameDay();
   try {
+    // Ensure the identity row exists first — br_strats.device_id is FK'd to
+    // br_users, so creating a strat for an unregistered device would violate it.
+    // Idempotent, so it's safe even when the client already called /api/user.
+    await supaRpc("br_upsert_user", { p_device: b.device_id, p_username: "", p_wallet: "" });
     const rows = await supaRpc<StratRow[]>("br_get_or_create_strat", { p_device: b.device_id, p_day: day });
     const s = Array.isArray(rows) ? rows[0] : rows;
     const punts = await loadPunts(s.id);
