@@ -1,18 +1,23 @@
-// Settle a day's strats: resolve every unresolved punt from the feed, stamp
-// resolved/observed/proof_json onto the row, then br_finalize_strat computes the
-// signed-odds score (Σ win − Σ lose, floored 0) and marks the strat settled.
-//
-// Admin-gated with the shared x-admin-password header (upgraded to wallet-sig auth
-// when the full admin surface lands). Idempotent: re-running only touches punts
-// still null and re-finalizes to the same score.
+// Stage-1 settlement: resolve a day's strats from FINAL goals and score them
+// immediately. proof_status stays 'pending' — the Stage-2 cron (validate_stat
+// .rpc) verifies against the on-chain Merkle root later and only then unlocks
+// withdrawal. Admin-gated with the shared x-admin-password header. Idempotent:
+// re-running only touches punts still unresolved.
 import { supaReady, supaGet, supaPatch, supaRpc } from "@/lib/supa";
-import { resolvePunt, type PuntRow } from "@/lib/settle";
+import { resolvePunt } from "@/lib/settle";
 import { todayGameDay } from "@/lib/strat";
+import type { MarketKind, Pick } from "@/lib/markets";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ADMIN = process.env.ADMIN_PASSWORD || "";
+
+type PuntRow = {
+  id: number; fixture_id: number; market: MarketKind; line: number | string | null;
+  pick: Pick; resolved: "hit" | "miss" | "push" | null;
+};
+type FixtureFinals = { fixture_id: number; final_p1_goals: number | null; final_p2_goals: number | null };
 
 export async function POST(req: Request) {
   if (!ADMIN) return Response.json({ ok: false, error: "admin not configured" }, { status: 503 });
@@ -30,21 +35,26 @@ export async function POST(req: Request) {
       `br_strats?game_day=eq.${day}&settled=eq.false&select=id`
     );
 
+    // Fixture finals cache (only fixtures whose match has a final score can settle).
+    const finalsRows = await supaGet<FixtureFinals[]>(
+      `br_fixtures?select=fixture_id,final_p1_goals,final_p2_goals`
+    );
+    const finals = new Map(finalsRows.map((f) => [f.fixture_id, f]));
+
     let puntsResolved = 0;
     const results: { stratId: number; score: number; resolved: number }[] = [];
 
     for (const s of strats) {
       const punts = await supaGet<PuntRow[]>(
-        `br_punts?strat_id=eq.${s.id}&select=id,fixture_id,side,team_code,stat,threshold,scope,resolved`
+        `br_punts?strat_id=eq.${s.id}&select=id,fixture_id,market,line,pick,resolved`
       );
       let n = 0;
       for (const p of punts) {
-        if (p.resolved) continue;              // already resolved (idempotent re-run)
-        const r = resolvePunt(p);
-        if (!r) continue;                       // fixture not in feed — leave null
-        await supaPatch(`br_punts?id=eq.${r.puntId}`, {
-          resolved: r.resolved, observed: r.observed, proof_json: r.proof,
-        });
+        if (p.resolved) continue;
+        const f = finals.get(p.fixture_id);
+        if (!f || f.final_p1_goals == null || f.final_p2_goals == null) continue;  // not final yet
+        const r = resolvePunt(p, f.final_p1_goals, f.final_p2_goals);
+        await supaPatch(`br_punts?id=eq.${r.puntId}`, { resolved: r.resolved });
         n++; puntsResolved++;
       }
       const score = await supaRpc<number>("br_finalize_strat", { p_strat_id: s.id });
